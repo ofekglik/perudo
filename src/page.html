@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#B0124A">
+<title>Perudo</title>
+<meta name="description" content="The bluffing dice game for 2 to 6 players. Everyone in the room plays on their own phone.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='5' y='5' width='90' height='90' rx='20' fill='%23B0124A'/%3E%3Ccircle cx='30' cy='30' r='9' fill='%23FBF7EE'/%3E%3Ccircle cx='70' cy='30' r='9' fill='%23FBF7EE'/%3E%3Ccircle cx='50' cy='50' r='9' fill='%23FBF7EE'/%3E%3Ccircle cx='30' cy='70' r='9' fill='%23FBF7EE'/%3E%3Ccircle cx='70' cy='70' r='9' fill='%23FBF7EE'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone-width column. A woven band on top; the current bid is the hero of every turn;
+   your cup (an indigo tray) and your move sit under it; seats in turn order below. */
+:root {
+  --wool: #EEEDF4;        /* page ground: undyed wool, cool */
+  --paper: #FFFFFF;       /* raised surfaces */
+  --ink: #1C1838;         /* text */
+  --ink-soft: #5A5777;    /* secondary text */
+  --rule: #D6D4E5;        /* hairlines */
+  --cochineal: #B0124A;   /* the red dye of Andean weaving: Dudo, danger, wild 1s */
+  --on-cochineal: #FFFFFF;
+  --indigo: #2B2F7A;      /* primary actions, the cup */
+  --on-indigo: #FFFFFF;
+  --gold: #C98908;        /* whose turn it is */
+  --gold-wash: #F7E7BF;
+  --tray: #23225E;        /* inside the cup */
+  --tray-ink: #E9E8FF;
+  --bone: #FBF7EE;        /* die faces */
+  --pip: #1C1838;
+  --pip-one: #B0124A;
+  --hit: #C98908;
+  --ok: #157350;
+  --font-display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --gutter: max(16px, env(safe-area-inset-left, 0px));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wool: #12112B; --paper: #1D1C3F; --ink: #EEECF9; --ink-soft: #A9A6CB; --rule: #34335F;
+    --cochineal: #F24C84; --on-cochineal: #1B0711; --indigo: #A9ACFF; --on-indigo: #12112B;
+    --gold: #F2BA3D; --gold-wash: #3B3016; --tray: #0B0A24; --tray-ink: #D9D8FF;
+    --bone: #F4EFE3; --pip: #1C1838; --pip-one: #B0124A; --hit: #F2BA3D; --ok: #4FD2A2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --wool: #12112B; --paper: #1D1C3F; --ink: #EEECF9; --ink-soft: #A9A6CB; --rule: #34335F;
+  --cochineal: #F24C84; --on-cochineal: #1B0711; --indigo: #A9ACFF; --on-indigo: #12112B;
+  --gold: #F2BA3D; --gold-wash: #3B3016; --tray: #0B0A24; --tray-ink: #D9D8FF;
+  --bone: #F4EFE3; --pip: #1C1838; --pip-one: #B0124A; --hit: #F2BA3D; --ok: #4FD2A2;
+  color-scheme: dark;
+}
+
+html, body { min-height: 100%; }
+body { margin: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body {
+  background: var(--wool);
+  color: var(--ink);
+  font: 400 16px/1.5 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+.band {
+  height: 16px;
+  background-color: var(--cochineal);
+  background-image:
+    linear-gradient(135deg, var(--gold) 25%, transparent 25%),
+    linear-gradient(225deg, var(--gold) 25%, transparent 25%),
+    linear-gradient(315deg, var(--gold) 25%, transparent 25%),
+    linear-gradient(45deg, var(--gold) 25%, transparent 25%);
+  background-size: 16px 16px;
+  background-position: -8px 0, -8px 0, 0 0, 0 0;
+  border-bottom: 4px solid var(--indigo);
+}
+.wrap {
+  max-width: 560px;
+  margin: 0 auto;
+  padding-left: var(--gutter);
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+  display: grid;
+  gap: 28px;
+}
+#app { display: grid; gap: 28px; min-width: 0; }
+
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h2 { font: 800 1.6rem/1.1 var(--font-display); letter-spacing: 0.01em; }
+p { margin: 0; }
+.soft { color: var(--ink-soft); }
+.small { font-size: 0.875rem; }
+.stack { display: grid; gap: 12px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* ---- buttons ---- */
+.btn {
+  appearance: none; border: 0; cursor: pointer;
+  font: 700 1rem/1.2 var(--font-body);
+  padding: 13px 18px; border-radius: 12px; min-height: 48px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--paper); color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--rule);
+  transition: transform .08s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--indigo); color: var(--on-indigo); box-shadow: none; }
+.btn.danger { background: var(--cochineal); color: var(--on-cochineal); box-shadow: none; }
+.btn.gold { background: var(--gold-wash); color: var(--ink); box-shadow: inset 0 0 0 2px var(--gold); }
+.btn.armed { box-shadow: 0 0 0 3px var(--wool), 0 0 0 6px var(--cochineal); }
+.btn.wide { width: 100%; }
+.btn.quiet { background: transparent; box-shadow: none; color: var(--ink-soft); padding-inline: 4px; min-height: 40px; font-weight: 600; }
+.btn.quiet:hover { color: var(--ink); }
+.btn .die { width: 1.5em; height: 1.5em; }
+:focus-visible { outline: 3px solid var(--indigo); outline-offset: 2px; border-radius: 6px; }
+.btn:focus-visible { outline-offset: 3px; border-radius: 12px; }
+
+input[type="text"] {
+  width: 100%; min-height: 48px; padding: 10px 14px; border-radius: 12px;
+  border: 2px solid var(--rule); background: var(--paper); color: var(--ink);
+  font: 500 1.05rem/1.2 var(--font-body);
+}
+input[type="text"]:focus { border-color: var(--indigo); outline: none; }
+.label { font-weight: 600; font-size: 0.95rem; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-weight: 600; cursor: pointer; }
+.check input { width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--indigo); flex: none; }
+.check span { display: grid; gap: 2px; }
+.check small { font-weight: 400; color: var(--ink-soft); font-size: 0.875rem; }
+
+/* ---- dice ---- */
+.die { display: block; width: 44px; height: 44px; flex: none; }
+.die-face { fill: var(--bone); stroke: rgba(28, 24, 56, .18); stroke-width: 2; }
+.pip { fill: var(--pip); }
+.pip-one { fill: var(--pip-one); }
+.die.miss { opacity: .3; }
+.die.hit .die-face { stroke: var(--hit); stroke-width: 9; }
+
+/* ---- lobby ---- */
+.wordmark {
+  font: 900 clamp(4rem, 22vw, 6.5rem)/0.85 var(--font-display);
+  letter-spacing: -0.01em; color: var(--indigo);
+}
+.lede { font-size: 1.1rem; max-width: 34ch; margin-top: 10px; }
+.panel { background: var(--paper); border-radius: 16px; padding: 18px; display: grid; gap: 14px; }
+.tables { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.tbl {
+  display: flex; align-items: center; gap: 12px; justify-content: space-between;
+  padding: 12px 12px 12px 16px; border-radius: 14px; background: var(--paper);
+}
+.tbl-main { display: grid; gap: 2px; min-width: 0; }
+.code { font: 800 1.35rem/1 var(--font-display); letter-spacing: 0.06em; }
+.tbl-people { color: var(--ink-soft); font-size: 0.9rem; overflow-wrap: anywhere; }
+.tbl .btn { flex: none; min-width: 92px; }
+.empty { padding: 18px; border-radius: 14px; border: 2px dashed var(--rule); color: var(--ink-soft); }
+
+/* ---- table: the bid is the hero ---- */
+.topline { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.stage { display: grid; gap: 6px; }
+.status { color: var(--ink-soft); font-size: 0.95rem; }
+.status b { color: var(--ink); font-weight: 700; }
+.bid-big {
+  display: flex; align-items: center; gap: 0.18em;
+  font: 900 clamp(4.2rem, 24vw, 6rem)/0.9 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+.bid-big .x { font-weight: 600; font-size: 0.55em; color: var(--ink-soft); }
+.bid-big .die { width: 0.82em; height: 0.82em; }
+.bid-big.none { font-size: clamp(2.6rem, 13vw, 3.6rem); color: var(--ink-soft); }
+.bid-by { font-weight: 600; }
+.turn {
+  justify-self: start; margin-top: 6px;
+  padding: 6px 12px; border-radius: 999px; font-weight: 700;
+  background: var(--paper); box-shadow: inset 0 0 0 2px var(--rule);
+}
+.turn.mine { background: var(--gold); color: #1C1838; box-shadow: none; }
+.pali {
+  display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px;
+  background: var(--gold-wash); border-left: 6px solid var(--gold);
+}
+.pali b { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; letter-spacing: 0.02em; }
+.note { padding: 12px 14px; border-radius: 12px; background: var(--paper); }
+
+/* ---- your cup ---- */
+.cup {
+  appearance: none; border: 0; cursor: pointer; width: 100%; text-align: left;
+  background: var(--tray); color: var(--tray-ink);
+  border-radius: 18px; padding: 16px; display: grid; gap: 12px;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.06), inset 0 -10px 24px rgba(0,0,0,.25);
+  font: inherit;
+}
+.cup:focus-visible { outline-offset: 3px; border-radius: 18px; }
+.cup-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.cup-head b { font: 800 1.25rem/1 var(--font-display); letter-spacing: 0.03em; }
+.cup-head span { font-size: 0.85rem; opacity: .8; }
+.hand, .covered { display: grid; grid-template-columns: repeat(5, minmax(0, 56px)); gap: 10px; min-height: 48px; align-items: center; }
+.hand > span { grid-column: 1 / -1; }
+.hand .die { width: 100%; height: auto; aspect-ratio: 1; }
+.covered i { display: block; width: 100%; aspect-ratio: 1; border-radius: 12px; background: rgba(255,255,255,.10); box-shadow: inset 0 0 0 2px rgba(255,255,255,.08); }
+.shake { animation: shake .5s ease-out; }
+@keyframes shake {
+  0%, 100% { transform: none; }
+  20% { transform: rotate(-4deg) translateX(-4px); }
+  45% { transform: rotate(3deg) translateX(4px); }
+  70% { transform: rotate(-2deg) translateX(-2px); }
+}
+
+/* ---- your move ---- */
+.dock { background: var(--paper); border-radius: 18px; padding: 16px; display: grid; gap: 14px; }
+.dock h2 { font-size: 1.4rem; }
+.qty { display: grid; grid-template-columns: 56px 1fr 56px; align-items: center; gap: 8px; }
+.qty .btn { padding: 0; font-size: 1.6rem; min-height: 56px; }
+.qty output {
+  text-align: center; font: 900 3.4rem/1 var(--font-display); font-variant-numeric: tabular-nums;
+}
+.faces { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.face {
+  appearance: none; border: 0; background: transparent; padding: 4px; border-radius: 12px; cursor: pointer;
+  display: grid; place-items: center; box-shadow: inset 0 0 0 2px transparent;
+}
+.face .die { width: 100%; height: auto; max-width: 52px; aspect-ratio: 1; }
+.face[aria-pressed="true"] { background: var(--gold-wash); box-shadow: inset 0 0 0 3px var(--gold); }
+.face:disabled { opacity: .25; cursor: not-allowed; }
+.hint { font-size: 0.9rem; color: var(--ink-soft); min-height: 1.35em; }
+.hint.bad { color: var(--cochineal); font-weight: 600; }
+.moves { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.moves .btn { min-height: 56px; font-size: 1.05rem; }
+.moves .only { grid-column: 1 / -1; }
+.calza-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.calza-row p { flex: 1 1 200px; font-size: 0.9rem; color: var(--ink-soft); }
+
+/* ---- seats, in turn order ---- */
+.seats { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: seat; }
+.seat {
+  display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center;
+  padding: 10px 4px; border-bottom: 1px solid var(--rule);
+}
+.seat:last-child { border-bottom: 0; }
+.seat-mark { width: 14px; height: 14px; border-radius: 50%; justify-self: center; }
+.seat.is-turn .seat-mark { background: var(--gold); box-shadow: 0 0 0 4px var(--gold-wash); }
+.seat-name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.seat-name .tag { font-weight: 500; font-size: 0.8rem; color: var(--ink-soft); margin-left: 6px; }
+.seat.is-out .seat-name { color: var(--ink-soft); text-decoration: line-through; }
+.seat-right { display: flex; align-items: center; gap: 8px; }
+.pips { display: flex; gap: 3px; }
+.pips i { width: 10px; height: 10px; border-radius: 3px; background: var(--ink); }
+.pips i.lost { background: transparent; box-shadow: inset 0 0 0 1.5px var(--rule); }
+.seat .btn.quiet { min-height: 32px; font-size: 0.85rem; }
+.seat .btn.quiet.armed { color: var(--cochineal); box-shadow: none; }
+
+/* ---- reveal ---- */
+.reveal { display: grid; gap: 12px; }
+.reveal-head { font: 800 1.6rem/1.1 var(--font-display); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.reveal-head .die { width: 1.1em; height: 1.1em; }
+.hands { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.hands li { display: grid; gap: 6px; }
+.hands .who { font-weight: 600; font-size: 0.95rem; }
+.hands .dice { display: flex; flex-wrap: wrap; gap: 6px; }
+.hands .die { width: 38px; height: 38px; }
+.waiting { color: var(--ink-soft); font-size: 0.95rem; animation: breathe 1.6s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .45; } }
+.verdict { padding: 14px; border-radius: 14px; background: var(--paper); display: grid; gap: 6px; }
+.verdict b { font: 800 1.45rem/1.1 var(--font-display); letter-spacing: 0.01em; }
+.history { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.history li { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 999px; background: var(--paper); font-size: 0.9rem; }
+.history .die { width: 20px; height: 20px; }
+.history b { font-variant-numeric: tabular-nums; }
+details.last { background: var(--paper); border-radius: 14px; padding: 12px 14px; }
+details.last summary { cursor: pointer; font-weight: 600; }
+details.last[open] summary { margin-bottom: 10px; }
+.winner-name { font: 900 clamp(3rem, 16vw, 4.6rem)/0.95 var(--font-display); color: var(--indigo); overflow-wrap: anywhere; }
+
+/* ---- rules ---- */
+.rules { border-top: 4px solid var(--indigo); padding-top: 14px; }
+.rules summary { cursor: pointer; font: 800 1.5rem/1.2 var(--font-display); list-style: none; display: flex; justify-content: space-between; }
+.rules summary::-webkit-details-marker { display: none; }
+.rules summary::after { content: "+"; font-weight: 600; }
+.rules[open] summary::after { content: "\2212"; }
+.rules h3 { font: 800 1.15rem/1.2 var(--font-display); letter-spacing: 0.02em; margin-top: 16px; }
+.rules ul { margin: 6px 0 0; padding-left: 1.2em; display: grid; gap: 6px; max-width: 62ch; }
+.rules p { margin-top: 6px; max-width: 62ch; }
+
+/* ---- joining and sharing ---- */
+.join-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+input.code-input { text-transform: uppercase; letter-spacing: 0.3em; font: 800 1.5rem/1 var(--font-display); text-align: center; }
+input.code-input::placeholder { letter-spacing: 0.1em; font-weight: 600; font-size: 1.1rem; }
+.share { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center; background: var(--paper); border-radius: 16px; padding: 16px; }
+.qr { width: 132px; height: 132px; background: #FFFFFF; border-radius: 10px; padding: 6px; }
+.qr svg { display: block; width: 100%; height: 100%; }
+.share .stack { gap: 8px; }
+.share .link { font-size: 0.85rem; color: var(--ink-soft); overflow-wrap: anywhere; user-select: all; }
+@media (max-width: 360px) { .share { grid-template-columns: 1fr; justify-items: start; } }
+.conn { padding: 12px 14px; border-radius: 12px; background: var(--gold-wash); border-left: 6px solid var(--gold); display: grid; gap: 4px; }
+.conn.bad { background: var(--paper); border-left-color: var(--cochineal); }
+.conn b { font-weight: 700; }
+.seat-name .tag.off { color: var(--cochineal); }
+
+#toast {
+  position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  max-width: min(92vw, 520px); padding: 12px 16px; border-radius: 12px;
+  background: var(--ink); color: var(--wool); font-weight: 600; z-index: 20;
+  box-shadow: 0 8px 30px rgba(0,0,0,.25);
+}
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+</head>
+<body>
+<div class="band" aria-hidden="true"></div>
+<main class="wrap">
+  <div id="app" aria-live="off"><p class="soft">Loading…</p></div>
+  <noscript><p class="note">Perudo needs JavaScript to run.</p></noscript>
+
+  <details class="rules" id="rules">
+    <summary>How to play</summary>
+    <p>Be the last player with dice. Two to six players, five dice each. Everyone rolls in secret and only sees their own dice.</p>
+
+    <h3>Who starts</h3>
+    <ul>
+      <li>When the host starts the game, every player rolls one die. The highest roll starts; tied players roll again.</li>
+      <li>Play goes around the table in seat order, the order people joined.</li>
+    </ul>
+
+    <h3>Your turn</h3>
+    <ul>
+      <li>Either raise the bid or call <b>Dudo</b> (“I doubt it”).</li>
+      <li>A bid is a quantity and a face, like five 4s: a claim about all the dice on the table, yours included.</li>
+      <li>1s are wild: they count as whatever face is bid. A round cannot open on 1s.</li>
+      <li>To raise, bid more dice of any face, or the same number of dice with a higher face. You may jump higher than needed.</li>
+      <li>Switching to 1s: at least half the current quantity, rounded up (seven 4s → four 1s).</li>
+      <li>Switching away from 1s: at least double plus one (four 1s → nine 2s).</li>
+      <li>A bid can’t name more dice than are on the table.</li>
+    </ul>
+
+    <h3>Dudo</h3>
+    <ul>
+      <li>Everyone’s dice are revealed and the matching dice plus wild 1s are counted.</li>
+      <li>Fewer than the bid: the bidder loses a die. Equal or more: the caller loses a die.</li>
+      <li>Whoever lost a die opens the next round. A player with no dice is out, and the next player opens instead.</li>
+    </ul>
+
+    <h3>Calza (optional, chosen when the table is made)</h3>
+    <ul>
+      <li>Any player except the one who made the bid can call Calza at any time: “the bid is exactly right.”</li>
+      <li>Exactly right: the caller wins a die back, up to five. Otherwise the caller loses a die. The bidder never loses a die to Calza.</li>
+      <li>The caller opens the next round.</li>
+    </ul>
+
+    <h3>Palifico</h3>
+    <ul>
+      <li>The first time a player drops to their last die, the next round is a palifico round, opened by that player. It happens once per player.</li>
+      <li>In palifico, 1s are not wild. The opener names any face, 1s included, and that face is locked for the round: players can only raise the quantity.</li>
+    </ul>
+
+    <h3>On this page</h3>
+    <ul>
+      <li>Whoever creates the table hosts it: their phone runs the game, so it needs to keep this page open with the screen on.</li>
+      <li>Friends join by scanning the host’s QR code, opening the shared link, or typing the five-letter table code.</li>
+      <li>Your phone rolls your dice and keeps them to itself until someone calls Dudo or Calza. Tap your cup to show or hide them.</li>
+      <li>Phones talk to each other directly, which works best on the same wifi.</li>
+      <li>If someone leaves mid-game, the round restarts with fresh dice. The host can remove a player whose phone has gone quiet.</li>
+      <li>On a new phone? Open the table and take over your seat.</li>
+    </ul>
+  </details>
+</main>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+/*__PEERJS__*/
+</script>
+<script>
+/*__QRCODE__*/
+</script>
+<script>
+/*__ENGINE__*/
+</script>
+<script>
+/*__NET__*/
+</script>
+<script>
+/*__UI__*/
+</script>
+</body>
+</html>
